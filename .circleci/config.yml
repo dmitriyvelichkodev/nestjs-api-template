@@ -2,22 +2,17 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: docker:17.05.0-ce-git
+      - image: docker:19.03.12-git
     steps:
       - checkout
       - setup_remote_docker
       - run:
-          name: Build application Docker image
+          name: Build and push application Docker image
           command: |
-            docker build -f ./Dockerfile -t app .
-      - run:
-          name: Push application Docker image
-          command: |
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
-                docker login --username $DOCKER_USER --password $DOCKER_PASS
-                docker tag app dmytrovelychkodev/nestjs-api-template:app
-                docker push dmytrovelychkodev/nestjs-api-template:app
-            fi
+            TAG=0.1.$CIRCLE_BUILD_NUM
+            docker build -t dmytrovelychkodev/nestjs-api-template:$TAG .
+            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+            docker push dmytrovelychkodev/nestjs-api-template:$TAG
   deploy:
     docker:
       - image: node:12.18-alpine
@@ -31,12 +26,18 @@ orbs:
   node: circleci/node@3.0.0
 
 workflows:
-#  tests:
-#    jobs:
-#      - node/test
-  build_and_deploy:
+  test_build_deploy_master:
     jobs:
-      - build
+      - node/test
+      - build:
+          requires:
+            - node/test
+          filters:
+            branches:
+              only: master
       - deploy:
           requires:
             - build
+          filters:
+            branches:
+              only: master
