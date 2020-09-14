@@ -14,6 +14,7 @@ jobs:
           name: Push application Docker image
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
+                docker login --username $DOCKER_USER --password $DOCKER_PASS
                 docker tag app dmytrovelychkodev/nestjs-api-template:app
                 docker push dmytrovelychkodev/nestjs-api-template:app
             fi
