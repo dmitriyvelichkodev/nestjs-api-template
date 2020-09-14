@@ -1,7 +1,41 @@
 version: 2.1
+jobs:
+  build:
+    docker:
+      - image: docker:17.05.0-ce-git
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build application Docker image
+          command: |
+            docker build -f ./Dockerfile -t app .
+      - run:
+          name: Push application Docker image
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+                docker tag app dmytrovelychkodev/nestjs-api-template:app
+                docker push dmytrovelychkodev/nestjs-api-template:app
+            fi
+  deploy:
+    docker:
+      - image: node:12.18-alpine
+    steps:
+      - run:
+          name: Pulling image
+          command: |
+            echo 'docker pull'
+
 orbs:
   node: circleci/node@3.0.0
+
 workflows:
-  node-tests:
+#  tests:
+#    jobs:
+#      - node/test
+  build_and_deploy:
     jobs:
-      - node/test
+      - build
+      - deploy:
+          requires:
+            - build
